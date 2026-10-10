@@ -3,49 +3,47 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Road Runner 3D</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;overflow:hidden;background:#101827;font-family:Arial,sans-serif;color:white;touch-action:none}
-canvas{display:block;width:100vw;height:100dvh}
-#hud{position:fixed;top:15px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
-.panel{background:#101827d9;border:1px solid #ffffff55;border-radius:14px;padding:10px 14px;font-weight:bold;box-shadow:0 4px 15px #0005}
-#score{font-size:20px}
-#coins{color:#ffdc35}
-#sound{position:fixed;top:90px;right:15px;background:#152033dd;color:white;border:1px solid #ffffff55;border-radius:12px;padding:10px 14px;font-size:16px}
-#message{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#07101b99;text-align:center}
-.card{width:min(88%,370px);padding:27px 20px;background:#17243a;border:1px solid #ffffff44;border-radius:24px;box-shadow:0 15px 60px #0008}
-h1{margin:0 0 8px;color:#ffdc35;font-size:32px}
-p{line-height:1.5;color:#e4eaf5}
-button{cursor:pointer;border:0;border-radius:13px;padding:13px 20px;background:#ffca28;color:#1a2435;font-size:17px;font-weight:bold}
-#controls{position:fixed;bottom:22px;left:0;right:0;display:flex;justify-content:space-between;padding:0 22px;pointer-events:none}
-.ctrl{pointer-events:auto;width:65px;height:62px;border-radius:18px;background:#101827b9;color:white;border:1px solid #ffffff77;font-size:26px;touch-action:none}
-#jump{width:86px;background:#ffca28;color:#192234}
-#hint{position:fixed;bottom:100px;left:0;right:0;text-align:center;font-size:12px;color:#ffffffb9;pointer-events:none}
+body{margin:0;overflow:hidden;background:#69b9ed;font-family:Arial,sans-serif;touch-action:none;color:white}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
+.badge{background:#142239e8;border:1px solid #ffffff66;border-radius:13px;padding:10px 13px;font-weight:bold}
+#sound{position:fixed;top:65px;right:12px;padding:10px;border-radius:12px;background:#142239e8;color:white;border:1px solid #ffffff66}
+#controls{position:fixed;bottom:20px;left:0;right:0;display:flex;justify-content:space-between;padding:0 18px}
+.ctrl{width:65px;height:58px;border:1px solid #ffffff88;border-radius:17px;background:#142239d9;color:white;font-size:23px;font-weight:bold;touch-action:none}
+#jump{width:90px;background:#ffd12f;color:#222b38;font-size:15px}
+#hint{position:fixed;bottom:88px;width:100%;text-align:center;font-size:12px;text-shadow:0 1px 4px #000;pointer-events:none}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#06101b9c;padding:20px}
+.card{width:min(370px,100%);padding:25px 20px;border-radius:24px;text-align:center;background:#172942;border:1px solid #ffffff55;box-shadow:0 15px 45px #0006}
+h1{color:#ffd12f;margin:0 0 12px;font-size:30px}
+p{line-height:1.55;color:#e4edf7}
+.action{background:#ffd12f;color:#172033;border:0;padding:14px 24px;border-radius:13px;font-size:17px;font-weight:bold}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <div id="hud">
-  <div class="panel">🪙 <span id="coins">0</span></div>
-  <div class="panel">SCORE <span id="score">0</span></div>
+ <div class="badge">🪙 <span id="coins">0</span></div>
+ <div class="badge">SCORE: <span id="score">0</span></div>
 </div>
 <button id="sound">🔊 Sound ON</button>
 
-<div id="hint">Swipe or use buttons to move • Jump over obstacles!</div>
+<div id="hint">LEFT / RIGHT TO MOVE • JUMP OVER POTHOLES</div>
 <div id="controls">
-  <button class="ctrl" id="left">◀</button>
-  <button class="ctrl" id="jump">⬆ JUMP</button>
-  <button class="ctrl" id="right">▶</button>
+ <button class="ctrl" id="left">◀</button>
+ <button class="ctrl" id="jump">⬆ JUMP</button>
+ <button class="ctrl" id="right">▶</button>
 </div>
 
-<div id="message">
+<div id="overlay">
  <div class="card">
-  <h1>ROAD RUNNER</h1>
-  <p>🏃 Run along the road!<br>🪙 Collect the golden coins.<br>🪨 Dodge rocks and jump over potholes.<br>🔊 Turn on sound for game effects!</p>
-  <button id="start">START RUNNING ▶</button>
+  <h1 id="title">🏃 ROAD RUNNER</h1>
+  <p id="description">Run along the three-lane road!<br>🪙 Collect coins coming from ahead.<br>🪨 Dodge rocks and jump over potholes.</p>
+  <button class="action" id="play">START GAME ▶</button>
  </div>
 </div>
 
@@ -53,194 +51,221 @@ button{cursor:pointer;border:0;border-radius:13px;padding:13px 20px;background:#
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
+let W=innerWidth,H=innerHeight,DPR=1;
 
-let W,H,sky;
 function resize(){
- W=canvas.width=innerWidth*devicePixelRatio;
- H=canvas.height=innerHeight*devicePixelRatio;
- canvas.style.width=innerWidth+'px';
- canvas.style.height=innerHeight+'px';
- ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
- W=innerWidth;H=innerHeight;
+ W=innerWidth; H=innerHeight;
+ DPR=Math.min(devicePixelRatio||1,2);
+ canvas.width=W*DPR;canvas.height=H*DPR;
+ canvas.style.width=W+'px';canvas.style.height=H+'px';
+ ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 addEventListener('resize',resize);resize();
 
 let running=false,gameOver=false,soundOn=true,audio=null;
-let lane=0,playerX=0,jumpY=0,jumpV=0,score=0,coins=0;
-let speed=0.34,world=0,objects=[],spawnTimer=0,last=0;
-let swipeX=null,swipeY=null;
+let lane=1,playerLane=1,jump=0,jumpV=0;
+let objects=[],elapsed=0,score=0,coins=0,speed=.32;
+let spawnClock=.5,last=0,world=0,swipeStart=null;
 
-function audioStart(){
- if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
- if(audio.state==='suspended')audio.resume();
-}
-function tone(freq,dur,type='sine',vol=0.07,endFreq=null){
+function tone(freq,duration=.12,type='sine',endFreq=null){
  if(!soundOn)return;
  try{
-  audioStart();
+  if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==='suspended')audio.resume();
   const o=audio.createOscillator(),g=audio.createGain();
   o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);
-  if(endFreq)o.frequency.exponentialRampToValueAtTime(endFreq,audio.currentTime+dur);
-  g.gain.setValueAtTime(vol,audio.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001,audio.currentTime+dur);
-  o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur);
+  if(endFreq)o.frequency.exponentialRampToValueAtTime(endFreq,audio.currentTime+duration);
+  g.gain.setValueAtTime(.07,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);
+  o.connect(g);g.connect(audio.destination);
+  o.start();o.stop(audio.currentTime+duration);
  }catch(e){}
 }
-function coinSound(){tone(700,.09,'sine',.08,1050);setTimeout(()=>tone(1100,.12,'sine',.06,1450),65)}
-function hitSound(){tone(180,.32,'sawtooth',.09,55)}
-function jumpSound(){tone(260,.16,'triangle',.06,520)}
-function startSound(){tone(440,.1);setTimeout(()=>tone(660,.13),100)}
-
+function coinSound(){
+ tone(740,.09,'sine',1100);
+ setTimeout(()=>tone(1100,.12,'sine',1450),75);
+}
 $('sound').onclick=()=>{
  soundOn=!soundOn;
  $('sound').textContent=soundOn?'🔊 Sound ON':'🔇 Sound OFF';
- if(soundOn){audioStart();tone(700,.1)}
+ if(soundOn)tone(700,.1);
 };
 
-function roadY(){return H*.34}
-function horizon(){return H*.31}
-function roadHalf(y){return 30+(y-horizon())*.72}
-function roadX(y){return W/2}
-function project(laneNo,z){
- const p=1-z;
- const y=horizon()+p*p*(H*.83);
- const half=roadHalf(y);
- return {x:W/2+laneNo*half*.57,y,scale:.12+p*1.05};
-}
-function poly(points,fill,stroke=null){
+function poly(points,color,stroke){
  ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
  for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
- ctx.closePath();ctx.fillStyle=fill;ctx.fill();
- if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}
+ ctx.closePath();ctx.fillStyle=color;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke()}
 }
+
+const topY=()=>H*.30;
+function widthAt(y){
+ let t=Math.max(0,Math.min(1,(y-topY())/(H*.79)));
+ return W*(.12+.92*t);
+}
+function project(l,z){
+ let p=Math.max(0,Math.min(1,z));
+ let y=topY()+p*p*(H*.80);
+ let width=widthAt(y);
+ return {x:W/2+(l-1)*width/3,y,scale:.14+p*1.15,width};
+}
+
 function drawBackground(){
- const g=ctx.createLinearGradient(0,0,0,H);
- g.addColorStop(0,'#62b8f5');g.addColorStop(.58,'#f9c68b');g.addColorStop(1,'#c9d9bf');
- ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ let sky=ctx.createLinearGradient(0,0,0,H);
+ sky.addColorStop(0,'#56b9f3');
+ sky.addColorStop(.54,'#fbd09a');
+ sky.addColorStop(1,'#c7d6a3');
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
 
- // sun
- ctx.fillStyle='#fff0a8';ctx.beginPath();ctx.arc(W*.78,H*.15,Math.min(W,H)*.055,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#fff0ac';
+ ctx.beginPath();ctx.arc(W*.79,H*.13,Math.min(W,H)*.055,0,Math.PI*2);ctx.fill();
 
- // distant mountains
- poly([[0,H*.42],[W*.1,H*.23],[W*.21,H*.36],[W*.34,H*.18],[W*.48,H*.37],[W*.65,H*.2],[W*.83,H*.35],[W,H*.19],[W,H*.48],[0,H*.48]],'#7a9eaa');
- poly([[0,H*.46],[W*.16,H*.32],[W*.29,H*.43],[W*.45,H*.28],[W*.61,H*.43],[W*.81,H*.3],[W,H*.43],[W,H*.55],[0,H*.55]],'#547e69');
+ // Distant mountains
+ poly([[0,H*.42],[W*.12,H*.20],[W*.26,H*.37],[W*.43,H*.17],
+ [W*.59,H*.36],[W*.77,H*.20],[W,H*.39],[W,H*.53],[0,H*.53]],'#849eac');
+ poly([[0,H*.45],[W*.18,H*.31],[W*.34,H*.42],[W*.53,H*.29],
+ [W*.70,H*.42],[W*.89,H*.31],[W,H*.41],[W,H*.56],[0,H*.56]],'#497b58');
 
- // hills / trees
- ctx.fillStyle='#315f48';ctx.fillRect(0,H*.43,W,H*.16);
- for(let i=0;i<24;i++){
-  let x=(i*113+world*9)%(W+70)-35;
-  let y=H*.44+(i%4)*H*.018;
-  ctx.fillStyle=i%2?'#1e563d':'#3c7950';
-  poly([[x-22,y+30],[x,y-35-(i%3)*12],[x+22,y+30]],ctx.fillStyle);
+ ctx.fillStyle='#2e6247';ctx.fillRect(0,H*.48,W,H*.52);
+
+ // Trees beside the road
+ for(let i=0;i<23;i++){
+  let x=(i*137+world*19)%(W+80)-40;
+  let y=H*(.42+(i%5)*.018);
+  let size=10+(i%4)*5;
+  ctx.fillStyle=i%2?'#23573c':'#38744a';
+  poly([[x-size,y+size*2],[x,y-size*2],[x+size,y+size*2]],ctx.fillStyle);
  }
- // road
- poly([[W*.43,horizon()],[W*.57,horizon()],[W*1.07,H],[W*-.07,H]],'#454b54');
- poly([[W*.425,horizon()],[W*.43,horizon()],[W*.03,H],[0,H]],'#d5d5c9');
- poly([[W*.57,horizon()],[W*.575,horizon()],[W,H],[W*.97,H]],'#d5d5c9');
 
- // lane separators scrolling into distance
- for(let i=0;i<14;i++){
-  const z=((i/14+world*.8)%1);
-  const y=horizon()+z*z*(H*.8);
-  const half=roadHalf(y);
-  const dashH=4+z*30;
-  for(const l of [-1/3,1/3]){
-   ctx.fillStyle='#ffffffcc';
-   ctx.fillRect(W/2+l*half*2,y,Math.max(1,z*4),dashH);
+ // Main road with a wide, clear three-lane perspective
+ let ty=topY(),by=H*1.10,tw=widthAt(ty),bw=widthAt(H);
+ poly([[W/2-tw/2,ty],[W/2+tw/2,ty],[W/2+bw/2,by],[W/2-bw/2,by]],'#424851');
+ // Road shoulders
+ ctx.strokeStyle='#eee5cf';ctx.lineWidth=3;
+ ctx.beginPath();ctx.moveTo(W/2-tw/2,ty);ctx.lineTo(W/2-bw/2,by);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(W/2+tw/2,ty);ctx.lineTo(W/2+bw/2,by);ctx.stroke();
+
+ // Two lane separators, dashed and scrolling toward the player
+ for(let i=0;i<15;i++){
+  let z=((i/15+world*.75)%1);
+  let y=ty+z*z*(H*.80);
+  let width=widthAt(y);
+  let dashH=2+z*25;
+  for(let divider of [-1,1]){
+   let x=W/2+divider*width/6;
+   ctx.fillStyle='#fff2d7';
+   ctx.fillRect(x-Math.max(1,z*1.7),y,Math.max(2,z*3),dashH);
   }
  }
 }
+
 function drawCoin(o){
- const p=project(o.lane,o.z),s=p.scale;
- const r=11*s;
- ctx.save();ctx.translate(p.x,p.y-20*s);
- ctx.shadowColor='#ffd52b';ctx.shadowBlur=16*s;
- ctx.fillStyle='#ffca22';ctx.beginPath();ctx.ellipse(0,0,r,r*1.25,0,0,Math.PI*2);ctx.fill();
- ctx.shadowBlur=0;ctx.strokeStyle='#fff2a0';ctx.lineWidth=2*s;ctx.stroke();
- ctx.fillStyle='#fff6b7';ctx.font=`bold ${Math.max(8,14*s)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);
+ let p=project(o.lane,o.z),s=p.scale;
+ let r=11*s,x=p.x,y=p.y-23*s;
+ ctx.save();ctx.translate(x,y);
+ ctx.shadowColor='#ffd52b';ctx.shadowBlur=15*s;
+ ctx.fillStyle='#ffca24';
+ ctx.beginPath();ctx.ellipse(0,0,r,r*1.23,0,0,Math.PI*2);ctx.fill();
+ ctx.shadowBlur=0;ctx.strokeStyle='#fff5ad';ctx.lineWidth=2*s;ctx.stroke();
+ ctx.fillStyle='#fff7c5';ctx.font=`bold ${Math.max(8,13*s)}px Arial`;
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);
  ctx.restore();
 }
 function drawRock(o){
- const p=project(o.lane,o.z),s=p.scale;
- const x=p.x,y=p.y;
- ctx.save();ctx.translate(x,y);
- ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(0,0,27*s,8*s,0,0,Math.PI*2);ctx.fill();
- poly([[-25*s,-4*s],[-19*s,-27*s],[-4*s,-39*s],[17*s,-30*s],[28*s,-9*s],[21*s,0],[-20*s,0]],'#777d83','#454b52');
- poly([[-19*s,-27*s],[-4*s,-39*s],[17*s,-30*s],[4*s,-23*s],[-7*s,-24*s]],'#aeb4b8');
- ctx.restore();
+ let p=project(o.lane,o.z),s=p.scale,x=p.x,y=p.y;
+ ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(x,y,26*s,8*s,0,0,Math.PI*2);ctx.fill();
+ poly([[x-24*s,y],[x-19*s,y-20*s],[x-5*s,y-36*s],
+ [x+12*s,y-31*s],[x+27*s,y-11*s],[x+23*s,y]],'#777e84','#454b51');
+ poly([[x-19*s,y-20*s],[x-5*s,y-36*s],[x+12*s,y-31*s],
+ [x+2*s,y-23*s],[x-8*s,y-23*s]],'#b6bec2');
 }
 function drawPit(o){
- const p=project(o.lane,o.z),s=p.scale;
- ctx.save();ctx.translate(p.x,p.y);
- ctx.fillStyle='#28282c';ctx.beginPath();ctx.ellipse(0,0,35*s,14*s,0,0,Math.PI*2);ctx.fill();
- ctx.strokeStyle='#17191d';ctx.lineWidth=4*s;ctx.stroke();
- ctx.strokeStyle='#77716a';ctx.lineWidth=2*s;
- ctx.beginPath();ctx.ellipse(0,-1*s,26*s,8*s,0,0,Math.PI*2);ctx.stroke();
- ctx.restore();
+ let p=project(o.lane,o.z),s=p.scale,x=p.x,y=p.y;
+ ctx.fillStyle='#28282d';
+ ctx.beginPath();ctx.ellipse(x,y,31*s,13*s,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#8a8175';ctx.lineWidth=2*s;ctx.stroke();
+ ctx.strokeStyle='#17191d';
+ ctx.beginPath();ctx.ellipse(x,y,23*s,8*s,0,0,Math.PI*2);ctx.stroke();
 }
+
 function drawBoy(){
- const ground=H*.79;
- const x=W/2+playerX*W*.19;
- const y=ground-jumpY;
- const bob=running&&!gameOver?Math.sin(world*20)*3:0;
- const s=Math.min(W/390,H/700)*1.1;
+ let p=project(playerLane,1);
+ let x=p.x,y=H*.78-jump;
+ let bob=running?Math.sin(world*16)*2:0;
+ let s=Math.min(W/390,H/700)*1.05;
  ctx.save();ctx.translate(x,y+bob);ctx.scale(s,s);
 
- // shadow
- ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(0,jumpY>0?jumpY+27:28,26,9,0,0,Math.PI*2);ctx.fill();
- // legs
- ctx.strokeStyle='#202532';ctx.lineWidth=12;ctx.lineCap='round';
- ctx.beginPath();ctx.moveTo(-8,8);ctx.lineTo(-13+Math.sin(world*17)*6,32);ctx.stroke();
- ctx.beginPath();ctx.moveTo(8,8);ctx.lineTo(14-Math.sin(world*17)*6,32);ctx.stroke();
- // shoes
- ctx.strokeStyle='#f2f2f2';ctx.lineWidth=9;
- ctx.beginPath();ctx.moveTo(-13+Math.sin(world*17)*6,33);ctx.lineTo(-3+Math.sin(world*17)*6,34);ctx.stroke();
- ctx.beginPath();ctx.moveTo(14-Math.sin(world*17)*6,33);ctx.lineTo(23-Math.sin(world*17)*6,34);ctx.stroke();
- // hoodie
- poly([[-17,-29],[-23,3],[-12,10],[12,10],[23,3],[17,-29]],'#263d68');
- // hood
- ctx.fillStyle='#d8e0e9';ctx.beginPath();ctx.ellipse(0,-28,13,14,0,0,Math.PI*2);ctx.fill();
- // head
- ctx.fillStyle='#bd805b';ctx.beginPath();ctx.arc(0,-45,13,0,Math.PI*2);ctx.fill();
- // hair
- ctx.fillStyle='#28201d';ctx.beginPath();ctx.arc(0,-49,14,Math.PI,Math.PI*2);ctx.lineTo(13,-43);ctx.lineTo(6,-46);ctx.lineTo(1,-42);ctx.lineTo(-5,-46);ctx.lineTo(-12,-42);ctx.closePath();ctx.fill();
- // arms
- ctx.strokeStyle='#263d68';ctx.lineWidth=9;
- ctx.beginPath();ctx.moveTo(-16,-25);ctx.lineTo(-25+Math.sin(world*15)*4,-7);ctx.stroke();
- ctx.beginPath();ctx.moveTo(16,-25);ctx.lineTo(25-Math.sin(world*15)*4,-7);ctx.stroke();
+ // Shadow
+ ctx.fillStyle='#0005';ctx.beginPath();
+ ctx.ellipse(0,30+jump*.25,25,8,0,0,Math.PI*2);ctx.fill();
+
+ // Running legs
+ let stride=running?Math.sin(world*16)*7:0;
+ ctx.lineCap='round';ctx.lineWidth=11;ctx.strokeStyle='#202735';
+ ctx.beginPath();ctx.moveTo(-8,5);ctx.lineTo(-12+stride,29);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(8,5);ctx.lineTo(12-stride,29);ctx.stroke();
+
+ ctx.lineWidth=8;ctx.strokeStyle='#f5f5f5';
+ ctx.beginPath();ctx.moveTo(-12+stride,30);ctx.lineTo(-2+stride,31);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(12-stride,30);ctx.lineTo(22-stride,31);ctx.stroke();
+
+ // Hoodie
+ poly([[-15,-29],[-22,2],[-12,10],[12,10],[22,2],[15,-29]],'#294b80');
+ // Arms
+ ctx.strokeStyle='#294b80';ctx.lineWidth=9;
+ ctx.beginPath();ctx.moveTo(-14,-24);ctx.lineTo(-23-stride*.5,-7);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(14,-24);ctx.lineTo(23+stride*.5,-7);ctx.stroke();
+
+ // Head and hair
+ ctx.fillStyle='#bd805b';ctx.beginPath();ctx.arc(0,-43,13,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#28201d';ctx.beginPath();
+ ctx.arc(0,-47,14,Math.PI,Math.PI*2);
+ ctx.lineTo(13,-42);ctx.lineTo(6,-45);ctx.lineTo(1,-41);
+ ctx.lineTo(-5,-45);ctx.lineTo(-12,-42);ctx.closePath();ctx.fill();
  ctx.restore();
 }
+
 function spawn(){
- const laneNo=[-1,0,1][Math.floor(Math.random()*3)];
- const r=Math.random();
- if(r<.42){
-  // coin trails
-  for(let i=0;i<4;i++)objects.push({type:'coin',lane:laneNo,z:-i*.12});
+ // Objects always appear at the far end of the road
+ let l=Math.floor(Math.random()*3);
+ let r=Math.random();
+ if(r<.52){
+  for(let i=0;i<4;i++)
+   objects.push({type:'coin',lane:l,z:-i*.105,done:false});
  }else{
-  objects.push({type:r<.72?'rock':'pit',lane:laneNo,z:0});
+  objects.push({type:r<.77?'rock':'pit',lane:l,z:0,done:false});
  }
 }
+
 function update(dt){
  if(!running||gameOver)return;
- world+=dt*speed*2.5;
- speed=Math.min(.7,speed+dt*.003);
- spawnTimer-=dt;
- if(spawnTimer<=0){spawn();spawnTimer=.8+Math.random()*.7}
- if(jumpY>0||jumpV>0){
-  jumpY+=jumpV*dt*60;jumpV-=.018*dt*60;
-  if(jumpY<=0){jumpY=0;jumpV=0}
- }
- playerX+=(lane-playerX)*Math.min(1,dt*12);
+ elapsed+=dt;world+=dt*2.4;
+ speed=Math.min(.62,.32+elapsed*.002);
+ spawnClock-=dt;
 
- for(const o of objects){
-  o.z+=dt*speed;
-  if(o.z>.86&&!o.done&&Math.abs(o.lane-playerX)<.47){
-   if(o.type==='coin'){coins++;score+=10;o.done=true;coinSound()}
-   else if(o.z<.99){
-    if(o.type==='pit'&&jumpY>25){o.done=true;score+=5}
-    else if(o.type==='rock'||o.type==='pit'){
-     o.done=true;hitSound();gameOver=true;running=false;showEnd();
-    }
+ if(spawnClock<=0){
+  spawn();
+  spawnClock=Math.max(.58,1.0-elapsed*.006)+Math.random()*.35;
+ }
+
+ if(jump>0||jumpV>0){
+  jump+=jumpV*dt*60;
+  jumpV-=.018*dt*60;
+  if(jump<=0){jump=0;jumpV=0}
+ }
+
+ playerLane+=(lane-playerLane)*Math.min(1,dt*12);
+
+ for(let o of objects){
+  o.z+=speed*dt;
+  // Only interact when the object reaches the player's end of the road
+  if(o.z>=.86&&!o.done&&o.z<1.04&&o.lane===lane){
+   if(o.type==='coin'){
+    o.done=true;coins++;score+=10;coinSound();
+   }else if(o.type==='pit'&&jump>32){
+    o.done=true;score+=5;
+   }else{
+    o.done=true;endGame();break;
    }
   }
  }
@@ -249,54 +274,79 @@ function update(dt){
  $('score').textContent=score;
  $('coins').textContent=coins;
 }
-function showEnd(){
- $('message').style.display='flex';
- $('message').innerHTML=`<div class="card"><h1>${gameOver?'OOPS!':'ROAD RUNNER'}</h1><p>🏁 Score: <b>${score}</b><br>🪙 Coins collected: <b>${coins}</b><br>Try again and beat your best run!</p><button id="start">PLAY AGAIN ↻</button></div>`;
- $('start').onclick=begin;
+
+function endGame(){
+ running=false;gameOver=true;
+ tone(190,.32,'sawtooth',55);
+ $('title').textContent='GAME OVER!';
+ $('description').innerHTML=
+  '🏁 Final score: <b>'+score+'</b><br>🪙 Coins collected: <b>'+coins+'</b><br>Try again and beat your score!';
+ $('play').textContent='RESTART ↻';
+ $('overlay').style.display='flex';
 }
-function begin(){
- audioStart();startSound();
- lane=0;playerX=0;jumpY=0;jumpV=0;
- score=0;coins=0;speed=.34;world=0;objects=[];spawnTimer=.4;
+
+function startGame(){
+ if(!audio){try{audio=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+ if(audio&&audio.state==='suspended')audio.resume();
+ tone(520,.12);
+ lane=1;playerLane=1;jump=0;jumpV=0;
+ objects=[];elapsed=0;score=0;coins=0;
+ speed=.32;world=0;spawnClock=.65;
  gameOver=false;running=true;
- $('message').style.display='none';
+ $('coins').textContent='0';$('score').textContent='0';
+ $('title').textContent='🏃 ROAD RUNNER';
+ $('description').innerHTML='Run along the three-lane road!<br>🪙 Collect coins coming from ahead.<br>🪨 Dodge rocks and jump over potholes.';
+ $('play').textContent='START GAME ▶';
+ $('overlay').style.display='none';
  last=performance.now();
 }
-$('start').onclick=begin;
-function moveLeft(){if(running&&!gameOver)lane=Math.max(-1,lane-1)}
-function moveRight(){if(running&&!gameOver)lane=Math.min(1,lane+1)}
-function jump(){if(running&&!gameOver&&jumpY===0){jumpV=.34;jumpSound()}}
-$('left').onpointerdown=e=>{e.preventDefault();moveLeft()};
-$('right').onpointerdown=e=>{e.preventDefault();moveRight()};
-$('jump').onpointerdown=e=>{e.preventDefault();jump()};
+
+function left(){if(running)lane=Math.max(0,lane-1)}
+function right(){if(running)lane=Math.min(2,lane+1)}
+function doJump(){
+ if(running&&jump===0&&jumpV===0){jumpV=.34;tone(270,.16,'triangle',520)}
+}
+$('left').addEventListener('pointerdown',e=>{e.preventDefault();left()});
+$('right').addEventListener('pointerdown',e=>{e.preventDefault();right()});
+$('jump').addEventListener('pointerdown',e=>{e.preventDefault();doJump()});
+$('play').onclick=startGame;
+
 addEventListener('keydown',e=>{
- if(['ArrowLeft','a','A'].includes(e.key))moveLeft();
- if(['ArrowRight','d','D'].includes(e.key))moveRight();
- if(['ArrowUp',' ','w','W'].includes(e.key))jump();
+ if(e.key==='ArrowLeft'||e.key==='a')left();
+ if(e.key==='ArrowRight'||e.key==='d')right();
+ if(e.key==='ArrowUp'||e.key===' '||e.key==='w')doJump();
 });
-canvas.addEventListener('pointerdown',e=>{swipeX=e.clientX;swipeY=e.clientY});
+
+canvas.addEventListener('pointerdown',e=>{swipeStart={x:e.clientX,y:e.clientY}});
 canvas.addEventListener('pointerup',e=>{
- if(swipeX===null)return;
- const dx=e.clientX-swipeX,dy=e.clientY-swipeY;
- if(Math.abs(dx)>25){dx<0?moveLeft():moveRight()}
- else if(dy<-20)jump();
- swipeX=swipeY=null;
+ if(!swipeStart)return;
+ let dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;
+ if(Math.abs(dx)>25){dx<0?left():right()}
+ else if(dy<-20)doJump();
+ swipeStart=null;
 });
+
 function frame(t){
- const dt=Math.min(.04,(t-last)/1000||0);last=t;
+ let dt=Math.min(.04,Math.max(0,(t-last)/1000));
+ last=t;
  drawBackground();
- // objects in depth order
+
+ // Draw distant objects first, nearby objects last
  objects.sort((a,b)=>a.z-b.z);
- for(const o of objects){
+ for(let o of objects){
   if(o.z<0)continue;
   if(o.type==='coin')drawCoin(o);
   else if(o.type==='rock')drawRock(o);
   else drawPit(o);
  }
- drawBoy();update(dt);
+
+ drawBoy();
+ update(dt);
  requestAnimationFrame(frame);
 }
-last=performance.now();requestAnimationFrame(frame);
+last=performance.now();
+requestAnimationFrame(frame);
 </script>
 </body>
-</html>
+  </html>
+  
