@@ -205,7 +205,7 @@ function pothole(o){
 // More natural-looking cartoon runner: head, hair, body, clothes, limbs and shoes.
 function runner(){
  let ground=H*.78;
- let x=project(playerLane,1).x;
+ let x=project(visualLane,1).x;
  let y=ground-jumpY;
  let scale=Math.min(W/390,H/700)*1.12;
  let stride=running?Math.sin(world*16)*9:0;
